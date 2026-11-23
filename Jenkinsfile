@@ -49,7 +49,35 @@ pipeline {
         }
 
         // =================================================
-        // 3. CREATE ECR REPOSITORY IF NOT EXISTS
+        // 3. DOCKER IMAGE VULNERABILITY SCAN
+        // =================================================
+        stage('Docker Image Vulnerability Scan') {
+            steps {
+                sh '''
+                    set -eu
+
+                    echo "========================================"
+                    echo "DOCKER IMAGE VULNERABILITY SCAN"
+                    echo "========================================"
+
+                    echo "Scanning image: ${IMAGE_NAME}:${IMAGE_TAG}"
+
+                    trivy image \
+                        --scanners vuln \
+                        --severity HIGH,CRITICAL \
+                        --ignore-unfixed \
+                        --exit-code 1 \
+                        --format table \
+                        --output trivy-image-report.txt \
+                        ${IMAGE_NAME}:${IMAGE_TAG}
+
+                    echo "Vulnerability scan completed successfully."
+                '''
+            }
+        }
+
+        // =================================================
+        // 4. CREATE ECR REPOSITORY IF NOT EXISTS
         // =================================================
         stage('Create ECR Repository') {
             steps {
@@ -66,7 +94,7 @@ pipeline {
         }
 
         // =================================================
-        // 4. LOGIN TO AMAZON ECR
+        // 5. LOGIN TO AMAZON ECR
         // =================================================
         stage('Login to ECR') {
             steps {
@@ -81,7 +109,7 @@ pipeline {
         }
 
         // =================================================
-        // 5. PUSH DOCKER IMAGE TO ECR
+        // 6. PUSH DOCKER IMAGE TO ECR
         // =================================================
         stage('Push to ECR') {
             steps {
@@ -93,7 +121,7 @@ pipeline {
         }
 
         // =================================================
-        // 6. CONFIGURE EKS ACCESS
+        // 7. CONFIGURE EKS ACCESS
         // =================================================
         stage('Configure EKS Access') {
             steps {
@@ -108,7 +136,7 @@ pipeline {
         }
 
         // =================================================
-        // 7. DEPLOY NEXT.JS APPLICATION TO EKS
+        // 8. DEPLOY NEXT.JS APPLICATION TO EKS
         // =================================================
         stage('Deploy to EKS') {
             steps {
@@ -150,7 +178,7 @@ pipeline {
         }
 
         // =====================================================
-        // 9. APPLY HORIZONTAL POD AUTOSCALER
+        // 10. APPLY HORIZONTAL POD AUTOSCALER
         // =====================================================
         stage('Configure Pod Autoscaling') {
             steps {
@@ -174,7 +202,7 @@ pipeline {
         }
 
         // =====================================================
-        // 10. VERIFY DEPLOYMENT
+        // 11. VERIFY DEPLOYMENT
         // =====================================================
         stage('Verify Deployment') {
             steps {
